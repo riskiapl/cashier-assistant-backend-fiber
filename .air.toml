@@ -1,0 +1,8 @@
+# Konfigurasi untuk Air
+root = "."
+tmp_dir = "tmp"
+[build]
+  cmd = "go build -o tmp/main.exe ."
+  bin = "tmp/main.exe"
+  delay = 1000 # Delay 1 detik sebelum reload
+  exclude_dir = ["tmp", "vendor"]

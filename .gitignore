@@ -1,0 +1,48 @@
+# Binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go specific
+*.test
+*.out
+/vendor/
+/bin/
+/tmp/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Air live reload
+tmp/
+/tmp
+
+# Log files
+*.log
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Build directory
+/build/
+/dist/
+
+# Dependencies
+/node_modules/
+
+# Test coverage
+coverage.txt
+coverage.html 
