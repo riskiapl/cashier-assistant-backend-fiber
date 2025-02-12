@@ -1,0 +1,10 @@
+base:
+  is_dev: false
+out_dir: ./model # direktori output
+db_info:
+  host: localhost
+  port: 5432 # port default PostgreSQL
+  username: postgres
+  password: password
+  database: cashier_assistant
+  type: 3 # 3 untuk PostgreSQL

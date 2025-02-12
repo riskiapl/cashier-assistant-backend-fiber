@@ -1,0 +1,36 @@
+@baseUrl = http://localhost:8000
+
+### Register new user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "name": "John Doe",
+    "email": "john@example.com", 
+    "password": "secret123"
+}
+
+### Login user
+POST {{baseUrl}}/auth/login 
+Content-Type: application/json
+
+{
+    "email": "john@example.com",
+    "password": "secret123"
+}
+
+### Get current user profile (Protected route)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer <access_token>
+
+### Refresh token
+POST {{baseUrl}}/auth/refresh-token
+Content-Type: application/json
+
+{
+    "refresh_token": "<refresh_token>"
+}
+
+### Logout user
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer <access_token>
