@@ -41,8 +41,12 @@ Sesuaikan konfigurasi di file `.env`
 
 ### Development (dengan hot reload)
 
-`air`
+```
+air
+```
 
 ### Production
 
-`go run main.go`
+```
+go run main.go
+```
