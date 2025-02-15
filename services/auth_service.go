@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/riskiapl/fiber-app/database"
+	"github.com/riskiapl/fiber-app/models"
 	"github.com/riskiapl/fiber-app/repository"
 	"github.com/riskiapl/fiber-app/types"
 	"golang.org/x/crypto/bcrypt"
@@ -37,6 +38,34 @@ func (s *AuthService) Login(input types.LoginInput) (*types.LoginResponse, error
 		ID:       member.ID,
 		Username: member.Username,
 		Email:    member.Email,
+	}
+
+	return response, nil
+}
+
+func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterResponse, error) {
+	// Hash password sebelum disimpan
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	// Buat member baru
+	member := &models.Member{
+		Username: input.Username,
+		Email:    input.Email,
+		Password: string(hashedPassword),
+		PlainPassword: input.PlainPassword,
+	}
+
+	// Simpan member ke database
+	if err := s.authRepo.Register(member); err != nil {
+		return nil, err
+	}
+
+	// Buat response
+	response := &types.RegisterResponse{
+		Message: "Registration successful",
 	}
 
 	return response, nil

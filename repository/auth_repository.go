@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"log"
 
 	"github.com/riskiapl/fiber-app/models"
 	"gorm.io/gorm"
@@ -13,15 +12,13 @@ type AuthRepository struct {
 }
 
 func NewAuthRepository(DB *gorm.DB) *AuthRepository {
+	if DB == nil {
+		panic("database connection is not initialized")
+	}
 	return &AuthRepository{DB: DB}
 }
 
 func (r *AuthRepository) GetMemberByEmail(userormail string) (*models.Member, error) {
-	log.Println(userormail, "masuk userormail")
-	if r.DB == nil {
-		return nil, errors.New("database connection is not initialized")
-	}
-
 	var member models.Member
 	result := r.DB.Where("email = ? OR username = ?", userormail, userormail).First(&member)
 	
@@ -33,4 +30,28 @@ func (r *AuthRepository) GetMemberByEmail(userormail string) (*models.Member, er
 	}
 
 	return &member, nil
+}
+
+func (r *AuthRepository) Register(member *models.Member) error {
+	// Cek apakah email sudah terdaftar
+	var existingMember models.Member
+	result := r.DB.Where("email = ?", member.Email).First(&existingMember)
+	if result.Error == nil {
+		return errors.New("email already registered")
+	}
+
+	// Cek apakah username sudah terdaftar
+	result = r.DB.Where("username = ?", member.Username).First(&existingMember)
+	if result.Error == nil {
+		return errors.New("username already taken") 
+	}
+
+	// Simpan member baru ke database
+	member.Status = "member"
+	member.ActionType = "I"
+	if err := r.DB.Create(member).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
