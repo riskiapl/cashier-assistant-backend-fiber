@@ -9,7 +9,14 @@ import (
 )
 
 func main() {
+	// Membuat database
+	database.CreateDatabase()
+
+	// Koneksi ke database
 	database.ConnectDB()
+	
+	// Migrasi database
+	database.Migrate()
 
 	app := fiber.New()
 

@@ -1,42 +1,33 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riskiapl/fiber-app/config"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *pgxpool.Pool
+var DB *gorm.DB
 
 func ConnectDB() {
 	config.LoadEnv()
 
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		config.GetEnv("DB_USER", "fiber_user"),
-		config.GetEnv("DB_PASSWORD", "fiber_pass"),
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
 		config.GetEnv("DB_HOST", "localhost"),
+		config.GetEnv("DB_USER", "postgres"),
+		config.GetEnv("DB_PASSWORD", "password"),
+		config.GetEnv("DB_NAME", "cashier_assistant_fiber"),
 		config.GetEnv("DB_PORT", "5432"),
-		config.GetEnv("DB_NAME", "fiber_db"),
 	)
 
 	var err error
-	DB, err = pgxpool.New(context.Background(), dsn)
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err = DB.Ping(ctx)
-	if err != nil {
-		log.Fatalf("Database ping failed: %v", err)
-	}
-
-	log.Println("Connected to the database!")
+	log.Println("Connected Successfully to Database")
 }
