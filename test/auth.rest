@@ -15,8 +15,8 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "john@example.com",
-    "password": "secret123"
+    "userormail": "riski",
+    "password": "cek123"
 }
 
 ### Get current user profile (Protected route)
