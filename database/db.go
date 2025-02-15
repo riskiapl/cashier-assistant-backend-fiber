@@ -31,8 +31,3 @@ func ConnectDB() {
 
 	log.Println("Connected Successfully to Database")
 }
-
-// Tambahkan fungsi getter
-func GetDB() *gorm.DB {
-	return DB
-}
