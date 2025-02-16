@@ -1,0 +1,40 @@
+# Version control
+.git/
+.gitignore
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+bin/
+tmp/
+*.exe
+*.test
+*.out
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker files
+Dockerfile.dev
+docker-compose.dev.yml
+
+# Documentation
+*.md
+docs/
+
+# Tests
+# *_test.go
+# tests/
+
+# Other
+LICENSE

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/riskiapl/fiber-app/controllers"
 )
 
 // AuthRoutes mengatur route untuk /auth
@@ -12,7 +13,8 @@ func AuthRoutes(app fiber.Router) {
 		return c.JSON(fiber.Map{"message": "Auth route"})
 	})
 
-	auth.Post("/login", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"message": "Login endpoint"})
-	})
+	authController := controllers.NewAuthController()
+
+	auth.Post("/login", authController.Login)	
+	auth.Post("/register", authController.Register)
 }

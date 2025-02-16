@@ -5,9 +5,9 @@ POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-    "name": "John Doe",
-    "email": "john@example.com", 
-    "password": "secret123"
+    "username": "riski",
+    "email": "riski@gmail.com", 
+    "password": "cek123"
 }
 
 ### Login user
@@ -15,8 +15,8 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-    "email": "john@example.com",
-    "password": "secret123"
+    "userormail": "riski",
+    "password": "cek123"
 }
 
 ### Get current user profile (Protected route)
