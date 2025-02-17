@@ -7,6 +7,12 @@ staging=1 # Set ke 1 jika ingin testing
 data_path="./certbot"
 rsa_key_size=4096
 
+# Add permissions fix
+if [ ! -e "$data_path/conf/accounts" ]; then
+    mkdir -p "$data_path/conf/accounts"
+    chmod -R 755 "$data_path"
+fi
+
 if [ -d "$data_path" ]; then
   read -p "Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
   if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
