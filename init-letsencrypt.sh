@@ -2,7 +2,7 @@
 
 domains=(riskiapl.duckdns.org)
 email="riski97@gmail.com" # Ganti dengan email Anda
-staging=0 # Set ke 1 jika ingin testing
+staging=1 # Set ke 1 jika ingin testing
 
 data_path="./certbot"
 rsa_key_size=4096
