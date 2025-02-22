@@ -1,18 +1,7 @@
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "0.0.0.0:80:80"
-    networks:
-      - app-network
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - app
-
   app:
     build: .
-    ports: # ubah dari 'expose' ke 'ports'
+    ports:
       - "0.0.0.0:8000:8000"
     networks:
       - app-network
