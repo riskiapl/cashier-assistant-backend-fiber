@@ -38,6 +38,8 @@ func (s *AuthService) Login(input types.LoginInput) (*types.LoginResponse, error
 		ID:       member.ID,
 		Username: member.Username,
 		Email:    member.Email,
+		Status:   member.Status,
+		Avatar:   member.Avatar,
 	}
 
 	return response, nil

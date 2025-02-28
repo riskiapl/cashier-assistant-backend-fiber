@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/riskiapl/fiber-app/services"
 	"github.com/riskiapl/fiber-app/types"
+	"github.com/riskiapl/fiber-app/utils"
 )
 
 type AuthController struct {
@@ -40,9 +41,24 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(result)
-}
+	// Create a map with a single "data" key containing the entire result
+	tokenPayload := map[string]interface{}{
+		"data": result,
+	}
 
+	// Generate JWT token
+	token, err := utils.GenerateToken(tokenPayload)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Error generating token",
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"token": token,
+		"user":  result,
+	})
+}
 
 func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	var input types.RegisterInput

@@ -9,6 +9,8 @@ type LoginResponse struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
+	Status   string `json:"status"`
+	Avatar   string `json:"avatar"`
 }
 
 type RegisterInput struct {
