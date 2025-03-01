@@ -54,9 +54,9 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 
 	// Buat member baru
 	member := &models.Member{
-		Username: input.Username,
-		Email:    input.Email,
-		Password: string(hashedPassword),
+		Username:      input.Username,
+		Email:         input.Email,
+		Password:      string(hashedPassword),
 		PlainPassword: input.PlainPassword,
 	}
 
@@ -71,4 +71,14 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 	}
 
 	return response, nil
+}
+
+func (s *AuthService) IsUsernameExists(username string) (bool, error) {
+	// Check if username already exists in database
+	exists, err := s.authRepo.IsUsernameExists(username)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }

@@ -89,3 +89,26 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusCreated).JSON(result)
 }
+
+func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
+	// Get the username from query parameters
+	username := ctx.Query("username")
+	if username == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Username parameter is required",
+		})
+	}
+
+	// Check if username exists using the auth service
+	exists, err := c.authService.IsUsernameExists(username)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Error checking username availability",
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"available": !exists,
+		"username":  username,
+	})
+}
