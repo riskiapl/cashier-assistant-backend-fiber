@@ -12,8 +12,6 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
-	config.LoadEnv()
-
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
 		config.GetEnv("DB_HOST", "localhost"),

@@ -42,7 +42,7 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	}
 
 	// Create a map with a single "data" key containing the entire result
-	tokenPayload := map[string]interface{}{
+	tokenPayload := map[string]any{
 		"data": result,
 	}
 

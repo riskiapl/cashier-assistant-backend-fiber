@@ -3,6 +3,8 @@ package utils
 import (
 	"time"
 
+	"maps"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/riskiapl/fiber-app/config"
 )
@@ -12,15 +14,13 @@ var secretKey = func() []byte {
     return []byte(secret)
 }()
 
-func GenerateToken(data map[string]interface{}) (string, error) {
+func GenerateToken(data map[string]any) (string, error) {
     claims := jwt.MapClaims{
         "exp": time.Now().Add(time.Hour * 24).Unix(), // Token valid for 24 hours
     }
     
     // Add all data fields to the claims
-    for key, value := range data {
-        claims[key] = value
-    }
+    maps.Copy(claims, data)
 
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
     tokenString, err := token.SignedString(secretKey)
