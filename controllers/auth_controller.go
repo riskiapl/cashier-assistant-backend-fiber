@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/riskiapl/fiber-app/services"
 	"github.com/riskiapl/fiber-app/types"
@@ -82,6 +84,14 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	// Proses register menggunakan service
 	result, err := c.authService.Register(input)
 	if err != nil {
+		// Check for specific error messages related to existing username/email
+		if strings.Contains(err.Error(), "username already taken") ||
+			strings.Contains(err.Error(), "email already registered") {
+			return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -107,6 +117,7 @@ func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 		})
 	}
 
+	// Return status 200 in both cases, just change the available flag
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
 		"available": !exists,
 		"username":  username,
