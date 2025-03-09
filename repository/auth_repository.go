@@ -21,7 +21,7 @@ func NewAuthRepository(DB *gorm.DB) *AuthRepository {
 func (r *AuthRepository) GetMemberByEmail(userormail string) (*models.Member, error) {
 	var member models.Member
 	result := r.DB.Where("email = ? OR username = ?", userormail, userormail).First(&member)
-	
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, errors.New("member not found")
@@ -43,7 +43,7 @@ func (r *AuthRepository) Register(member *models.Member) error {
 	// Cek apakah username sudah terdaftar
 	result = r.DB.Where("username = ?", member.Username).First(&existingMember)
 	if result.Error == nil {
-		return errors.New("username already taken") 
+		return errors.New("username already taken")
 	}
 
 	// Simpan member baru ke database
@@ -54,4 +54,18 @@ func (r *AuthRepository) Register(member *models.Member) error {
 	}
 
 	return nil
+}
+
+func (r *AuthRepository) IsUsernameExists(username string) (bool, error) {
+	var member models.Member
+	result := r.DB.Where("username = ?", username).First(&member)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, result.Error
+	}
+
+	return true, nil
 }

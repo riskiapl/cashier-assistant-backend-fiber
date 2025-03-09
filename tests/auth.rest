@@ -19,6 +19,10 @@ Content-Type: application/json
     "password": "cek123"
 }
 
+### Check user
+GET {{baseUrl}}/auth/check-username?username=riski
+Content-Type: application/json
+
 ### Get current user profile (Protected route)
 GET {{baseUrl}}/auth/profile
 Authorization: Bearer <access_token>

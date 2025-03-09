@@ -15,6 +15,7 @@ func AuthRoutes(app fiber.Router) {
 
 	authController := controllers.NewAuthController()
 
-	auth.Post("/login", authController.Login)	
+	auth.Post("/login", authController.Login)
 	auth.Post("/register", authController.Register)
+	auth.Get("/check-username", authController.CheckUsername)
 }

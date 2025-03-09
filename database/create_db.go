@@ -10,8 +10,6 @@ import (
 )
 
 func CreateDatabase() {
-	config.LoadEnv()
-
 	// Koneksi ke postgres default database
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/postgres",
@@ -29,19 +27,19 @@ func CreateDatabase() {
 
 	// Cek apakah database sudah ada
 	var exists bool
-	err = conn.QueryRow(context.Background(), 
-		"SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)", 
+	err = conn.QueryRow(context.Background(),
+		"SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)",
 		"cashier_assistant_fiber").Scan(&exists)
-	
+
 	if err != nil {
 		log.Fatalf("Error checking database existence: %v", err)
 	}
 
 	// Jika database belum ada, buat baru
 	if !exists {
-		_, err = conn.Exec(context.Background(), 
+		_, err = conn.Exec(context.Background(),
 			"CREATE DATABASE cashier_assistant_fiber")
-		
+
 		if err != nil {
 			log.Fatalf("Error creating database: %v", err)
 		}
