@@ -28,7 +28,7 @@ func NewAuthService() *AuthService {
 
 func (s *AuthService) Login(input types.LoginInput) (*types.LoginResponse, error) {
 	// Cari member berdasarkan email
-	member, err := s.authRepo.GetMemberByEmail(input.Userormail)
+	member, err := s.authRepo.GetMemberByUserOrMail(input.Userormail)
 	if err != nil {
 		return nil, err
 	}

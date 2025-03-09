@@ -18,7 +18,7 @@ func NewAuthRepository(DB *gorm.DB) *AuthRepository {
 	return &AuthRepository{DB: DB}
 }
 
-func (r *AuthRepository) GetMemberByEmail(userormail string) (*models.Member, error) {
+func (r *AuthRepository) GetMemberByUserOrMail(userormail string) (*models.Member, error) {
 	var member models.Member
 	result := r.DB.Where("email = ? OR username = ?", userormail, userormail).First(&member)
 
