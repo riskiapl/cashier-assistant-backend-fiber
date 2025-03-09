@@ -25,7 +25,8 @@ WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /app/main .
-COPY .env .env
+# Copy production environment file and rename it to .env
+COPY .env.production .env
 
 # Add CA certificates
 RUN apk add --no-cache ca-certificates
