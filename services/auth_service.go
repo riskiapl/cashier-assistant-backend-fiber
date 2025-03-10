@@ -80,7 +80,7 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 		OtpCode:    otpCode,
 		IsVerified: false,
 		ExpiredAt:  time.Now().Add(15 * time.Minute), // OTP expires after 15 minutes
-		ActionType: "REGISTER",
+		ActionType: "I",                              // I for initial registration
 	}
 
 	if err := s.authRepo.StoreOTP(otp); err != nil {
