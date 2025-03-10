@@ -100,6 +100,29 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(result)
 }
 
+func (c *AuthController) VerifyOTP(ctx *fiber.Ctx) error {
+	var input types.VerifyOTPInput
+
+	// Parse request body
+	if err := ctx.BodyParser(&input); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Process OTP verification
+	err := c.authService.VerifyRegistration(input)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Email verification successful. You can now login.",
+	})
+}
+
 func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 	// Get the username from query parameters
 	username := ctx.Query("username")

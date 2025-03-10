@@ -32,8 +32,6 @@ func main() {
 	// Get CORS configuration based on environment
 	corsConfig := config.GetCorsConfig()
 
-	log.Printf("CORS configuration: %v\n", corsConfig)
-
 	// Setup CORS middleware
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     corsConfig["origins"],
