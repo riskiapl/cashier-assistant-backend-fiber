@@ -74,13 +74,16 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 	// Generate OTP
 	otpCode := s.GenerateOTP()
 
+	// Get expiration time
+	expirationTime := time.Now().Add(15 * time.Minute)
+
 	// Store OTP in database
 	otp := &models.OTP{
 		Email:      input.Email,
 		OtpCode:    otpCode,
 		IsVerified: false,
-		ExpiredAt:  time.Now().Add(15 * time.Minute), // OTP expires after 15 minutes
-		ActionType: "I",                              // I for initial registration
+		ExpiredAt:  expirationTime, // OTP expires after 15 minutes
+		ActionType: "I",            // I for initial registration
 	}
 
 	if err := s.authRepo.StoreOTP(otp); err != nil {
@@ -106,7 +109,8 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 
 	// Buat response
 	response := &types.RegisterResponse{
-		Message: "Registration initiated. Please verify your email with the OTP sent.",
+		Message:   "Registration initiated. Please verify your email with the OTP sent.",
+		ExpiredAt: expirationTime,
 	}
 
 	return response, nil

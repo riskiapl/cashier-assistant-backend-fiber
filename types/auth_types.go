@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // LoginInput represents the input data for login
 type LoginInput struct {
 	Userormail string `json:"userormail" validate:"required"`
@@ -25,7 +27,8 @@ type RegisterInput struct {
 
 // RegisterResponse represents the response data for registration
 type RegisterResponse struct {
-	Message string `json:"message"`
+	Message   string    `json:"message"`
+	ExpiredAt time.Time `json:"expired_at"`
 }
 
 // VerifyOTPInput represents the input data for OTP verification
