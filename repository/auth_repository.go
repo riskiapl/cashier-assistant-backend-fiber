@@ -190,3 +190,15 @@ func (r *AuthRepository) DeleteOTP(email string) error {
 
 	return nil
 }
+
+func (r *AuthRepository) DeleteExpiredPendingMembers(expirationDuration time.Duration) (int64, error) {
+	cutoffTime := time.Now().Add(-expirationDuration)
+	result := r.DB.Where("created_at < ?", cutoffTime).Delete(&models.PendingMember{})
+	return result.RowsAffected, result.Error
+}
+
+func (r *AuthRepository) DeleteExpiredOTPs(expirationDuration time.Duration) (int64, error) {
+	cutoffTime := time.Now().Add(-expirationDuration)
+	result := r.DB.Where("created_at < ?", cutoffTime).Delete(&models.OTP{})
+	return result.RowsAffected, result.Error
+}
