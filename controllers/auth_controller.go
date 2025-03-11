@@ -119,7 +119,7 @@ func (c *AuthController) VerifyOTP(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Email verification successful. You can now login.",
+		"success": "Email verification successful. You can now login.",
 	})
 }
 
@@ -165,6 +165,6 @@ func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Pending member deleted successfully",
+		"success": "Pending member deleted successfully",
 	})
 }
