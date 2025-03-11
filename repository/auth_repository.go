@@ -143,9 +143,18 @@ func (r *AuthRepository) CompleteRegistration(email string) error {
 }
 
 func (r *AuthRepository) IsUsernameExists(username string) (bool, error) {
+	// Check in members table
 	var member models.Member
 	result := r.DB.Where("username = ?", username).First(&member)
+	if result.Error == nil {
+		return true, nil
+	} else if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, result.Error
+	}
 
+	// Check in pending_members table
+	var pendingMember models.PendingMember
+	result = r.DB.Where("username = ?", username).First(&pendingMember)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return false, nil
