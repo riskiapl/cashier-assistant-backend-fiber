@@ -146,3 +146,25 @@ func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 		"username":  username,
 	})
 }
+
+func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
+	// Get email from query parameter
+	email := ctx.Query("email")
+	if email == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Email parameter is required",
+		})
+	}
+
+	// Process delete pending member
+	err := c.authService.DeletePendingMember(email)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Pending member deleted successfully",
+	})
+}

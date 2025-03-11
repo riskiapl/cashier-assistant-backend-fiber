@@ -193,3 +193,7 @@ func (s *AuthService) SendOTPEmail(email string, otp string) error {
 
 	return nil
 }
+
+func (s *AuthService) DeletePendingMember(email string) error {
+	return s.authRepo.DeletePendingMember(email)
+}

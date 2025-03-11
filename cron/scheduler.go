@@ -19,7 +19,6 @@ func StartCronJobs() {
 	cronService := services.NewCronService()
 
 	// Schedule job to run at minute 00 of every hour (standard cron expression: "0 * * * *")
-	// Format: minute hour day-of-month month day-of-week
 	_, err := cronScheduler.AddFunc("0 * * * *", func() {
 		log.Println("Running scheduled cleanup of expired data...")
 		cronService.CleanupExpiredData(24 * time.Hour)
