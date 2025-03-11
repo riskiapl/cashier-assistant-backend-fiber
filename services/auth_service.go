@@ -109,7 +109,7 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 
 	// Buat response
 	response := &types.RegisterResponse{
-		Message:   "Registration initiated. Please verify your email with the OTP sent.",
+		Success:   "OTP sent to your email",
 		ExpiredAt: expirationTime,
 	}
 
@@ -196,4 +196,42 @@ func (s *AuthService) SendOTPEmail(email string, otp string) error {
 
 func (s *AuthService) DeletePendingMember(email string) error {
 	return s.authRepo.DeletePendingMember(email)
+}
+
+func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
+	// Generate OTP
+	otpCode := s.GenerateOTP()
+
+	// Get expiration time
+	expirationTime := time.Now().Add(15 * time.Minute)
+
+	// Store OTP in database
+	otp := &models.OTP{
+		Email:      email,
+		OtpCode:    otpCode,
+		IsVerified: false,
+		ExpiredAt:  expirationTime, // OTP expires after 15 minutes
+		ActionType: "R",            // R for resend
+	}
+
+	if err := s.authRepo.StoreOTP(otp); err != nil {
+		return nil, err
+	}
+
+	// Send OTP via email
+	if err := s.SendOTPEmail(email, otpCode); err != nil {
+		// Clean up by deleting the OTP if email sending fails
+		if deleteErr := s.authRepo.DeleteOTP(email); deleteErr != nil {
+			fmt.Printf("Failed to delete OTP after email sending failure: %v\n", deleteErr)
+		}
+		return nil, err
+	}
+
+	// Buat response
+	response := &types.RegisterResponse{
+		Success:   "OTP resent to your email",
+		ExpiredAt: expirationTime,
+	}
+
+	return response, nil
 }

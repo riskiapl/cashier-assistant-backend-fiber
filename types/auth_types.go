@@ -27,7 +27,7 @@ type RegisterInput struct {
 
 // RegisterResponse represents the response data for registration
 type RegisterResponse struct {
-	Message   string    `json:"message"`
+	Success   string    `json:"success"`
 	ExpiredAt time.Time `json:"expired_at"`
 }
 
@@ -40,4 +40,8 @@ type VerifyOTPInput struct {
 // VerifyOTPResponse represents the response data for OTP verification
 type VerifyOTPResponse struct {
 	Message string `json:"message"`
+}
+
+type ResendOTPInput struct {
+	Email string `json:"email" validate:"required,email"`
 }

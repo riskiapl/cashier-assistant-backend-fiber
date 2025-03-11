@@ -168,3 +168,31 @@ func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
 		"success": "Pending member deleted successfully",
 	})
 }
+
+func (c *AuthController) ResendOTP(ctx *fiber.Ctx) error {
+	var input types.ResendOTPInput
+
+	// Parse request body
+	if err := ctx.BodyParser(&input); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate the email from body
+	if input.Email == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Email is required",
+		})
+	}
+
+	// Process resend OTP
+	result, err := c.authService.ResendOTP(input.Email)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(result)
+}
