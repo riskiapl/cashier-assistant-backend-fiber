@@ -159,8 +159,8 @@ func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
 	// Process delete pending member
 	err := c.authService.DeletePendingMember(email)
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": err.Error(),
 		})
 	}
 

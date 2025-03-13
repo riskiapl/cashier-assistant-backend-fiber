@@ -202,3 +202,17 @@ func (r *AuthRepository) DeleteExpiredOTPs(expirationDuration time.Duration) (in
 	result := r.DB.Where("created_at < ?", cutoffTime).Delete(&models.OTP{})
 	return result.RowsAffected, result.Error
 }
+
+func (r *AuthRepository) GetPendingMemberByEmail(email string) (*models.PendingMember, error) {
+	var pendingMember models.PendingMember
+	result := r.DB.Where("email = ?", email).First(&pendingMember)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("pending member not found")
+		}
+		return nil, result.Error
+	}
+
+	return &pendingMember, nil
+}

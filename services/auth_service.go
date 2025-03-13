@@ -199,6 +199,12 @@ func (s *AuthService) DeletePendingMember(email string) error {
 }
 
 func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
+	// Check if pending member exists
+	_, err := s.authRepo.GetPendingMemberByEmail(email)
+	if err != nil {
+		return nil, errors.New("no pending member found, try registering again")
+	}
+
 	// Generate OTP
 	otpCode := s.GenerateOTP()
 
@@ -211,7 +217,7 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 		OtpCode:    otpCode,
 		IsVerified: false,
 		ExpiredAt:  expirationTime, // OTP expires after 15 minutes
-		ActionType: "R",            // R for resend
+		ActionType: "U",            // U for update
 	}
 
 	if err := s.authRepo.StoreOTP(otp); err != nil {
