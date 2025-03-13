@@ -100,6 +100,29 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(result)
 }
 
+func (c *AuthController) VerifyOTP(ctx *fiber.Ctx) error {
+	var input types.VerifyOTPInput
+
+	// Parse request body
+	if err := ctx.BodyParser(&input); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Process OTP verification
+	err := c.authService.VerifyRegistration(input)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": "Email verification successful. You can now login.",
+	})
+}
+
 func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 	// Get the username from query parameters
 	username := ctx.Query("username")
@@ -122,4 +145,54 @@ func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 		"available": !exists,
 		"username":  username,
 	})
+}
+
+func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
+	// Get email from query parameter
+	email := ctx.Query("email")
+	if email == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Email parameter is required",
+		})
+	}
+
+	// Process delete pending member
+	err := c.authService.DeletePendingMember(email)
+	if err != nil {
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": "Pending member deleted successfully",
+	})
+}
+
+func (c *AuthController) ResendOTP(ctx *fiber.Ctx) error {
+	var input types.ResendOTPInput
+
+	// Parse request body
+	if err := ctx.BodyParser(&input); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate the email from body
+	if input.Email == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Email is required",
+		})
+	}
+
+	// Process resend OTP
+	result, err := c.authService.ResendOTP(input.Email)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(result)
 }

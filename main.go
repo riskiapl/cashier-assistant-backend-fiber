@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/riskiapl/fiber-app/config"
+	"github.com/riskiapl/fiber-app/cron"
 	"github.com/riskiapl/fiber-app/database"
 	"github.com/riskiapl/fiber-app/routes"
 )
@@ -27,12 +28,13 @@ func main() {
 	// Migrasi database
 	database.Migrate()
 
+	// Start cron jobs
+	cron.StartCronJobs()
+
 	app := fiber.New()
 
 	// Get CORS configuration based on environment
 	corsConfig := config.GetCorsConfig()
-
-	log.Printf("CORS configuration: %v\n", corsConfig)
 
 	// Setup CORS middleware
 	app.Use(cors.New(cors.Config{

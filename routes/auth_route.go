@@ -17,5 +17,8 @@ func AuthRoutes(app fiber.Router) {
 
 	auth.Post("/login", authController.Login)
 	auth.Post("/register", authController.Register)
+	auth.Post("/verify-otp", authController.VerifyOTP) // New route for OTP verification
 	auth.Get("/check-username", authController.CheckUsername)
+	auth.Delete("/delete-pending-member", authController.DeletePendingMember)
+	auth.Put("/resend-otp", authController.ResendOTP) // New route for OTP resend
 }
