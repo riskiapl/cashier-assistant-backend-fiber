@@ -241,3 +241,47 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 
 	return response, nil
 }
+
+func (s *AuthService) ForgotPassword(input types.ForgotPasswordInput) (*types.RegisterResponse, error) {
+	// Check if member exists
+	_, err := s.authRepo.GetMemberByUserOrMail(input.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate OTP
+	otpCode := s.GenerateOTP()
+
+	// Get expiration time
+	expirationTime := time.Now().Add(15 * time.Minute)
+
+	// Store OTP in database
+	otp := &models.OTP{
+		Email:      input.Email,
+		OtpCode:    otpCode,
+		IsVerified: false,
+		ExpiredAt:  expirationTime, // OTP expires after 15 minutes
+		ActionType: "P",            // P for password reset
+	}
+
+	if err := s.authRepo.StoreOTP(otp); err != nil {
+		return nil, err
+	}
+
+	// Send OTP via email
+	if err := s.SendOTPEmail(input.Email, otpCode); err != nil {
+		// Clean up by deleting the OTP if email sending fails
+		if deleteErr := s.authRepo.DeleteOTP(input.Email); deleteErr != nil {
+			fmt.Printf("Failed to delete OTP after email sending failure: %v\n", deleteErr)
+		}
+		return nil, err
+	}
+
+	// Buat response
+	response := &types.RegisterResponse{
+		Success:   "OTP sent to your email",
+		ExpiredAt: expirationTime,
+	}
+
+	return response, nil
+}

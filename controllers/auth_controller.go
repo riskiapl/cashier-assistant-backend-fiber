@@ -196,3 +196,31 @@ func (c *AuthController) ResendOTP(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusOK).JSON(result)
 }
+
+func (c *AuthController) ForgotPassword(ctx *fiber.Ctx) error {
+	var input types.ForgotPasswordInput
+
+	// Parse request body
+	if err := ctx.BodyParser(&input); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate the email from body
+	if input.Email == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Email is required",
+		})
+	}
+
+	// Process forgot password
+	result, err := c.authService.ForgotPassword(input)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(result)
+}

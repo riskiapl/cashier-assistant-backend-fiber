@@ -45,3 +45,7 @@ type VerifyOTPResponse struct {
 type ResendOTPInput struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+type ForgotPasswordInput struct {
+	Email string `json:"email" validate:"required,email"`
+}
