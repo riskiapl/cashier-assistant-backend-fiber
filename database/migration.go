@@ -13,6 +13,7 @@ func Migrate() {
 		&models.Member{},
 		&models.OTP{},
 		&models.PendingMember{},
+		&models.ResetPasswordToken{},
 		// Tambahkan model lain di sini
 	)
 
