@@ -242,46 +242,138 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 	return response, nil
 }
 
-func (s *AuthService) ForgotPassword(input types.ForgotPasswordInput) (*types.RegisterResponse, error) {
+func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.RegisterResponse, error) {
 	// Check if member exists
-	_, err := s.authRepo.GetMemberByUserOrMail(input.Email)
+	member, err := s.authRepo.GetMemberByUserOrMail(input.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate OTP
-	otpCode := s.GenerateOTP()
-
 	// Get expiration time
 	expirationTime := time.Now().Add(15 * time.Minute)
 
-	// Store OTP in database
-	otp := &models.OTP{
-		Email:      input.Email,
-		OtpCode:    otpCode,
-		IsVerified: false,
-		ExpiredAt:  expirationTime, // OTP expires after 15 minutes
-		ActionType: "P",            // P for password reset
+	// Prepare data for token generation and database storage
+	tokenData := struct {
+		Email   string
+		Token   string
+		Expired time.Time
+	}{
+		Email:   member.Email,
+		Token:   utils.GenerateUUID(),
+		Expired: expirationTime,
 	}
 
-	if err := s.authRepo.StoreOTP(otp); err != nil {
+	// Generate JWT token
+	tokenString, err := utils.GenerateToken(map[string]any{
+		"email":   tokenData.Email,
+		"token":   tokenData.Token,
+		"expired": tokenData.Expired.Unix(),
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	// Send OTP via email
-	if err := s.SendOTPEmail(input.Email, otpCode); err != nil {
-		// Clean up by deleting the OTP if email sending fails
-		if deleteErr := s.authRepo.DeleteOTP(input.Email); deleteErr != nil {
-			fmt.Printf("Failed to delete OTP after email sending failure: %v\n", deleteErr)
+	// Store token in database using the same data
+	resetToken := &models.ResetPasswordToken{
+		Email:   tokenData.Email,
+		Token:   tokenData.Token,
+		Expired: tokenData.Expired,
+		IsUsed:  false,
+	}
+
+	if err := s.authRepo.StoreResetPasswordToken(resetToken); err != nil {
+		return nil, err
+	}
+
+	// Get frontend URL from env
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		return nil, errors.New("frontend URL is not configured")
+	}
+
+	// Create reset password link
+	resetLink := fmt.Sprintf("%s/auth/reset-password?email=%s&token=%s", frontendURL, input.Email, tokenString)
+
+	// Send reset password email
+	if err := s.SendResetPasswordEmail(member.Email, resetLink); err != nil {
+		// Clean up by deleting the token if email sending fails
+		if deleteErr := s.authRepo.DeleteResetPasswordToken(member.Email); deleteErr != nil {
+			fmt.Printf("Failed to delete reset token after email sending failure: %v\n", deleteErr)
 		}
 		return nil, err
 	}
 
-	// Buat response
+	// Create response
 	response := &types.RegisterResponse{
-		Success:   "OTP sent to your email",
+		Success:   "Reset password link sent to your email",
 		ExpiredAt: expirationTime,
 	}
 
 	return response, nil
+}
+
+func (s *AuthService) SendResetPasswordEmail(email string, resetLink string) error {
+	// Get email configuration from environment variables
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpUsername := os.Getenv("SMTP_USERNAME")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+
+	// Validate SMTP configuration
+	if smtpHost == "" || smtpPort == "" || smtpUsername == "" || smtpPassword == "" {
+		return errors.New("SMTP configuration is incomplete")
+	}
+
+	// Set up authentication
+	auth := smtp.PlainAuth("", smtpUsername, smtpPassword, smtpHost)
+
+	// Compose the email
+	from := smtpUsername
+	to := []string{email}
+
+	subject := "Reset Your Password"
+	expiresAt := "15 minutes"
+	htmlBody := utils.ResetPasswordMail(resetLink, expiresAt)
+
+	// Format the email with HTML content type
+	message := fmt.Appendf(nil, "To: %s\r\n"+
+		"Subject: %s\r\n"+
+		"MIME-version: 1.0\r\n"+
+		"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
+		"\r\n"+
+		"%s\r\n", email, subject, htmlBody)
+
+	// Send email
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *AuthService) ChangePassword(resetPasswordData types.ResetPasswordData, newPassword string) error {
+	// Get the reset token from database to verify
+	_, err := s.authRepo.GetResetPasswordToken(resetPasswordData.Email, resetPasswordData.Token)
+	if err != nil {
+		return err
+	}
+
+	// Hash the new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// Update the member's password
+	if err := s.authRepo.UpdatePassword(resetPasswordData.Email, string(hashedPassword), newPassword); err != nil {
+		return err
+	}
+
+	// Mark the token as used
+	if err := s.authRepo.MarkResetTokenAsUsed(resetPasswordData.Email); err != nil {
+		return err
+	}
+
+	return nil
 }

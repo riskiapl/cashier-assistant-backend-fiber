@@ -216,3 +216,94 @@ func (r *AuthRepository) GetPendingMemberByEmail(email string) (*models.PendingM
 
 	return &pendingMember, nil
 }
+
+func (r *AuthRepository) StoreResetPasswordToken(token *models.ResetPasswordToken) error {
+	// Delete existing tokens for this email if any
+	if err := r.DB.Where("email = ?", token.Email).Delete(&models.ResetPasswordToken{}).Error; err != nil {
+		return err
+	}
+
+	// Save the new token
+	if err := r.DB.Create(token).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *AuthRepository) DeleteResetPasswordToken(email string) error {
+	result := r.DB.Where("email = ?", email).Delete(&models.ResetPasswordToken{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("reset password token not found")
+	}
+
+	return nil
+}
+
+func (r *AuthRepository) GetResetPasswordToken(email string, token string) (*models.ResetPasswordToken, error) {
+	var resetPasswordToken models.ResetPasswordToken
+	// First check if a token exists for this email
+	result := r.DB.Where("email = ?", email).First(&resetPasswordToken)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("reset password token not found")
+		}
+		return nil, result.Error
+	}
+
+	// Now verify if the token matches
+	if resetPasswordToken.Token != token {
+		return nil, errors.New("invalid reset password token")
+	}
+
+	// Check if token is already used
+	if resetPasswordToken.IsUsed {
+		return nil, errors.New("reset password token has already been used")
+	}
+
+	// Check if token is expired
+	if resetPasswordToken.Expired.Before(time.Now()) {
+		return nil, errors.New("reset password token has expired")
+	}
+
+	return &resetPasswordToken, nil
+}
+
+func (r *AuthRepository) UpdatePassword(email string, hashedPassword string, newPassword string) error {
+	result := r.DB.Model(&models.Member{}).
+		Where("email = ?", email).
+		Updates(map[string]any{
+			"password":       hashedPassword,
+			"plain_password": newPassword,
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("member not found")
+	}
+
+	return nil
+}
+
+func (r *AuthRepository) MarkResetTokenAsUsed(email string) error {
+	result := r.DB.Model(&models.ResetPasswordToken{}).
+		Where("email = ?", email).
+		Update("is_used", true)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("reset password token not found")
+	}
+
+	return nil
+}

@@ -49,3 +49,15 @@ type ResendOTPInput struct {
 type ForgotPasswordInput struct {
 	Email string `json:"email" validate:"required,email"`
 }
+
+// ChangePasswordInput represents the input data for changing password
+type ChangePasswordInput struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"newPassword" validate:"required,min=6"`
+}
+
+type ResetPasswordData struct {
+	Email   string    `json:"email"`
+	Token   string    `json:"token"`
+	Expired time.Time `json:"expired"`
+}

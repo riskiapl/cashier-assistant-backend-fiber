@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/riskiapl/fiber-app/services"
@@ -197,7 +198,7 @@ func (c *AuthController) ResendOTP(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(result)
 }
 
-func (c *AuthController) ForgotPassword(ctx *fiber.Ctx) error {
+func (c *AuthController) ResetPassword(ctx *fiber.Ctx) error {
 	var input types.ForgotPasswordInput
 
 	// Parse request body
@@ -215,7 +216,7 @@ func (c *AuthController) ForgotPassword(ctx *fiber.Ctx) error {
 	}
 
 	// Process forgot password
-	result, err := c.authService.ForgotPassword(input)
+	result, err := c.authService.ResetPassword(input)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": err.Error(),
@@ -223,4 +224,52 @@ func (c *AuthController) ForgotPassword(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(result)
+}
+
+func (c *AuthController) ChangePassword(ctx *fiber.Ctx) error {
+	var input types.ChangePasswordInput
+
+	// Parse request body
+	if err := ctx.BodyParser(&input); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Validate input
+	if input.Token == "" || input.NewPassword == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Token and new password are required",
+		})
+	}
+	// Parse and validate JWT token
+	claims, err := utils.ParseToken(input.Token)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid or expired token",
+		})
+	}
+
+	// Create ResetPasswordData from token claims
+	resetPasswordData := types.ResetPasswordData{
+		Email: claims["email"].(string),
+		Token: claims["token"].(string),
+	}
+
+	// Convert expires_at from Unix timestamp to time.Time
+	if expired, ok := claims["expired"].(float64); ok {
+		resetPasswordData.Expired = time.Unix(int64(expired), 0)
+	}
+
+	// Pass token claims and new password to change password function
+	err = c.authService.ChangePassword(resetPasswordData, input.NewPassword)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": "Password has been changed successfully",
+	})
 }
