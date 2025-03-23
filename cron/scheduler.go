@@ -2,7 +2,6 @@ package cron
 
 import (
 	"log"
-	"time"
 
 	"github.com/riskiapl/fiber-app/services"
 	"github.com/robfig/cron/v3"
@@ -18,10 +17,10 @@ func StartCronJobs() {
 	// Create the cron service
 	cronService := services.NewCronService()
 
-	// Schedule job to run at minute 00 of every hour (standard cron expression: "0 * * * *")
-	_, err := cronScheduler.AddFunc("0 * * * *", func() {
+	// Schedule job to run at 12:00 AM every day (standard cron expression: "0 0 * * *")
+	_, err := cronScheduler.AddFunc("0 0 * * *", func() {
 		log.Println("Running scheduled cleanup of expired data...")
-		cronService.CleanupExpiredData(24 * time.Hour)
+		cronService.CleanupExpiredData()
 	})
 
 	if err != nil {

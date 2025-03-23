@@ -307,3 +307,9 @@ func (r *AuthRepository) MarkResetTokenAsUsed(email string) error {
 
 	return nil
 }
+
+func (r *AuthRepository) DeleteExpiredResetPasswordTokens(expirationDuration time.Duration) (int64, error) {
+	cutoffTime := time.Now().Add(-expirationDuration)
+	result := r.DB.Where("created_at < ?", cutoffTime).Delete(&models.ResetPasswordToken{})
+	return result.RowsAffected, result.Error
+}

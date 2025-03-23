@@ -19,9 +19,9 @@ func NewCronService() *CronService {
 }
 
 // CleanupExpiredData removes pending members and OTPs older than the specified duration
-func (s *CronService) CleanupExpiredData(expirationDuration time.Duration) {
+func (s *CronService) CleanupExpiredData() {
 	// Delete expired pending members
-	deletedPendingMembers, err := s.authRepo.DeleteExpiredPendingMembers(expirationDuration)
+	deletedPendingMembers, err := s.authRepo.DeleteExpiredPendingMembers(24 * time.Hour)
 	if err != nil {
 		log.Printf("Error deleting expired pending members: %v", err)
 	} else {
@@ -29,10 +29,18 @@ func (s *CronService) CleanupExpiredData(expirationDuration time.Duration) {
 	}
 
 	// Delete expired OTPs
-	deletedOTPs, err := s.authRepo.DeleteExpiredOTPs(expirationDuration)
+	deletedOTPs, err := s.authRepo.DeleteExpiredOTPs(24 * time.Hour)
 	if err != nil {
 		log.Printf("Error deleting expired OTPs: %v", err)
 	} else {
 		log.Printf("Deleted %d expired OTPs", deletedOTPs)
+	}
+
+	// Delete expired reset password tokens
+	deletedResetTokens, err := s.authRepo.DeleteExpiredResetPasswordTokens(720 * time.Hour) // 30 days (720 hours)
+	if err != nil {
+		log.Printf("Error deleting expired reset password tokens: %v", err)
+	} else {
+		log.Printf("Deleted %d expired reset password tokens", deletedResetTokens)
 	}
 }
