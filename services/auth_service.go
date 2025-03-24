@@ -208,17 +208,13 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 
 func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.RegisterResponse, error) {
 	// Check if there's a token within the cooldown period (5 minutes)
-	withinCooldown, remainingTime, err := s.authRepo.IsWithinCooldownPeriod(input.Email, 5)
+	withinCooldown, err := s.authRepo.IsWithinCooldownPeriod(input.Email, 5)
 	if err != nil {
 		return nil, err
 	}
 
 	if withinCooldown {
-		// Calculate minutes and seconds for the error message
-		minutes := int(remainingTime.Minutes())
-		seconds := int(remainingTime.Seconds()) % 60
-
-		return nil, fmt.Errorf("please wait %d minutes and %d seconds before requesting another password reset", minutes, seconds)
+		return nil, errors.New("please wait 5 minutes before requesting another password reset")
 	}
 
 	// Check if member exists
