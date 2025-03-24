@@ -8,7 +8,9 @@ import (
 	"github.com/riskiapl/fiber-app/config"
 	"github.com/riskiapl/fiber-app/cron"
 	"github.com/riskiapl/fiber-app/database"
+	"github.com/riskiapl/fiber-app/middleware"
 	"github.com/riskiapl/fiber-app/routes"
+	"github.com/riskiapl/fiber-app/utils"
 )
 
 func main() {
@@ -31,6 +33,11 @@ func main() {
 	// Start cron jobs
 	cron.StartCronJobs()
 
+	// Initialize i18n
+	if err := utils.InitGlobalI18n(); err != nil {
+		log.Fatalf("Failed to initialize i18n: %v", err)
+	}
+
 	app := fiber.New()
 
 	// Get CORS configuration based on environment
@@ -43,6 +50,9 @@ func main() {
 		AllowMethods:     corsConfig["methods"],
 		AllowCredentials: corsConfig["credentials"] == "true",
 	}))
+
+	// Add the i18n middleware to your fiber app
+	app.Use(middleware.I18nMiddleware())
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, Fiber!")

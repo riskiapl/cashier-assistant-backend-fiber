@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -25,14 +24,14 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 
 	if err := ctx.BodyParser(&input); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": utils.T("auth.invalid_request_body"),
 		})
 	}
 
 	// Validasi input
 	if input.Userormail == "" || input.Password == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Username or password are required",
+			"error": utils.T("auth.username_password_required"),
 		})
 	}
 
@@ -53,7 +52,7 @@ func (c *AuthController) Login(ctx *fiber.Ctx) error {
 	token, err := utils.GenerateToken(tokenPayload)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Error generating token",
+			"error": utils.T("auth.token_generation_error"),
 		})
 	}
 
@@ -68,14 +67,14 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 
 	if err := ctx.BodyParser(&input); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": utils.T("auth.invalid_request_body"),
 		})
 	}
 
 	// Validasi input
 	if input.Username == "" || input.Email == "" || input.Password == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Username, email and password are required",
+			"error": utils.T("auth.registration_fields_required"),
 		})
 	}
 
@@ -85,9 +84,11 @@ func (c *AuthController) Register(ctx *fiber.Ctx) error {
 	// Proses register menggunakan service
 	result, err := c.authService.Register(input)
 	if err != nil {
-		// Check for specific error messages related to existing username/email
-		if strings.Contains(err.Error(), "username already taken") ||
-			strings.Contains(err.Error(), "email already registered") {
+		// Get the error code if it's an AppError
+		errorCode := utils.GetErrorCode(err)
+
+		// Check if it's a conflict error
+		if errorCode == utils.ErrUsernameExists || errorCode == utils.ErrEmailExists {
 			return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"error": err.Error(),
 			})
@@ -107,7 +108,7 @@ func (c *AuthController) VerifyOTP(ctx *fiber.Ctx) error {
 	// Parse request body
 	if err := ctx.BodyParser(&input); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": utils.T("auth.invalid_request_body"),
 		})
 	}
 
@@ -120,7 +121,7 @@ func (c *AuthController) VerifyOTP(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": "Email verification successful. You can now login.",
+		"success": utils.T("auth.email_verification_successful"),
 	})
 }
 
@@ -129,7 +130,7 @@ func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 	username := ctx.Query("username")
 	if username == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Username parameter is required",
+			"error": utils.T("auth.username_parameter_required"),
 		})
 	}
 
@@ -137,7 +138,7 @@ func (c *AuthController) CheckUsername(ctx *fiber.Ctx) error {
 	exists, err := c.authService.IsUsernameExists(username)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Error checking username availability",
+			"error": utils.T("auth.username_check_error"),
 		})
 	}
 
@@ -153,7 +154,7 @@ func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
 	email := ctx.Query("email")
 	if email == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Email parameter is required",
+			"error": utils.T("auth.email_parameter_required"),
 		})
 	}
 
@@ -166,7 +167,7 @@ func (c *AuthController) DeletePendingMember(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": "Pending member deleted successfully",
+		"success": utils.T("auth.pending_member_deleted"),
 	})
 }
 
@@ -176,14 +177,14 @@ func (c *AuthController) ResendOTP(ctx *fiber.Ctx) error {
 	// Parse request body
 	if err := ctx.BodyParser(&input); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": utils.T("auth.invalid_request_body"),
 		})
 	}
 
 	// Validate the email from body
 	if input.Email == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Email is required",
+			"error": utils.T("auth.email_required"),
 		})
 	}
 
@@ -204,14 +205,14 @@ func (c *AuthController) ResetPassword(ctx *fiber.Ctx) error {
 	// Parse request body
 	if err := ctx.BodyParser(&input); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": utils.T("auth.invalid_request_body"),
 		})
 	}
 
 	// Validate the email from body
 	if input.Email == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Email is required",
+			"error": utils.T("auth.email_required"),
 		})
 	}
 
@@ -232,21 +233,22 @@ func (c *AuthController) ChangePassword(ctx *fiber.Ctx) error {
 	// Parse request body
 	if err := ctx.BodyParser(&input); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": utils.T("auth.invalid_request_body"),
 		})
 	}
 
 	// Validate input
 	if input.Token == "" || input.NewPassword == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Token and new password are required",
+			"error": utils.T("auth.token_password_required"),
 		})
 	}
+
 	// Parse and validate JWT token
 	claims, err := utils.ParseToken(input.Token)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid or expired token",
+			"error": utils.T("auth.invalid_expired_token"),
 		})
 	}
 
@@ -270,6 +272,6 @@ func (c *AuthController) ChangePassword(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": "Password has been changed successfully",
+		"success": utils.T("auth.password_changed_successfully"),
 	})
 }

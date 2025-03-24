@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/riskiapl/fiber-app/models"
+	"github.com/riskiapl/fiber-app/utils"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +26,7 @@ func (r *AuthRepository) GetMemberByUserOrMail(userormail string) (*models.Membe
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("member not found")
+			return nil, utils.NewTranslatedAppError(utils.ErrUserNotFound, "auth.member_not_found")
 		}
 		return nil, result.Error
 	}
@@ -34,15 +35,14 @@ func (r *AuthRepository) GetMemberByUserOrMail(userormail string) (*models.Membe
 }
 
 func (r *AuthRepository) Register(pendingMember *models.PendingMember) error {
-	// Cek apakah email sudah terdaftar di members
 	// Cek apakah email atau username sudah terdaftar di members
 	var existingMember models.Member
 	result := r.DB.Where("email = ? OR username = ?", pendingMember.Email, pendingMember.Username).First(&existingMember)
 	if result.Error == nil {
 		if existingMember.Email == pendingMember.Email {
-			return errors.New("email already registered")
+			return utils.NewTranslatedAppError(utils.ErrEmailExists, "auth.email_already_registered")
 		}
-		return errors.New("username already taken")
+		return utils.NewTranslatedAppError(utils.ErrUsernameExists, "auth.username_already_taken")
 	}
 
 	// Cek apakah email atau username sudah terdaftar di pending_members
@@ -50,9 +50,9 @@ func (r *AuthRepository) Register(pendingMember *models.PendingMember) error {
 	result = r.DB.Where("email = ? OR username = ?", pendingMember.Email, pendingMember.Username).First(&existingPending)
 	if result.Error == nil {
 		if existingPending.Email == pendingMember.Email {
-			return errors.New("email already in registration process")
+			return utils.NewTranslatedAppError(utils.ErrEmailExists, "auth.email_registration_process")
 		}
-		return errors.New("username already in registration process")
+		return utils.NewTranslatedAppError(utils.ErrUsernameExists, "auth.username_registration_process")
 	}
 
 	// Simpan pending member baru ke database
@@ -86,7 +86,7 @@ func (r *AuthRepository) VerifyOTP(email string, otpCode string) (*models.OTP, e
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("invalid or expired OTP")
+			return nil, utils.TranslatedError("auth.invalid_expired_otp")
 		}
 		return nil, result.Error
 	}
@@ -172,7 +172,7 @@ func (r *AuthRepository) DeletePendingMember(email string) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("pending member not found")
+		return utils.TranslatedError("auth.pending_member_not_found")
 	}
 
 	return nil
@@ -185,7 +185,7 @@ func (r *AuthRepository) DeleteOTP(email string) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("OTP not found")
+		return utils.TranslatedError("auth.otp_not_found")
 	}
 
 	return nil
@@ -209,7 +209,7 @@ func (r *AuthRepository) GetPendingMemberByEmail(email string) (*models.PendingM
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("pending member not found")
+			return nil, utils.NewTranslatedAppError(utils.ErrUserNotFound, "auth.pending_member_not_found")
 		}
 		return nil, result.Error
 	}
@@ -250,24 +250,24 @@ func (r *AuthRepository) GetResetPasswordToken(email string, token string) (*mod
 	result := r.DB.Where("email = ?", email).First(&resetPasswordToken)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("reset password token not found")
+			return nil, utils.TranslatedError("auth.reset_token_not_found")
 		}
 		return nil, result.Error
 	}
 
 	// Now verify if the token matches
 	if resetPasswordToken.Token != token {
-		return nil, errors.New("invalid reset password token")
+		return nil, utils.TranslatedError("auth.invalid_reset_token")
 	}
 
 	// Check if token is already used
 	if resetPasswordToken.IsUsed {
-		return nil, errors.New("reset password token has already been used")
+		return nil, utils.TranslatedError("auth.token_already_used")
 	}
 
 	// Check if token is expired
 	if resetPasswordToken.Expired.Before(time.Now()) {
-		return nil, errors.New("reset password token has expired")
+		return nil, utils.TranslatedError("auth.token_expired")
 	}
 
 	return &resetPasswordToken, nil
@@ -286,7 +286,7 @@ func (r *AuthRepository) UpdatePassword(email string, hashedPassword string, new
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("member not found")
+		return utils.TranslatedError("auth.member_not_found")
 	}
 
 	return nil

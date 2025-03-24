@@ -43,7 +43,7 @@ func (s *AuthService) Login(input types.LoginInput) (*types.LoginResponse, error
 	// Verifikasi password
 	err = bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(input.Password))
 	if err != nil {
-		return nil, errors.New("invalid password")
+		return nil, errors.New(utils.T("auth.invalid_password"))
 	}
 
 	// Buat response
@@ -116,7 +116,7 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 
 	// Buat response
 	response := &types.RegisterResponse{
-		Success:   "OTP sent to your email",
+		Success:   utils.T("auth.otp_sent"),
 		ExpiredAt: expirationTime,
 	}
 
@@ -166,7 +166,7 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 	// Check if pending member exists
 	_, err := s.authRepo.GetPendingMemberByEmail(email)
 	if err != nil {
-		return nil, errors.New("no pending member found, try registering again")
+		return nil, errors.New(utils.T("auth.no_pending_member"))
 	}
 
 	// Generate OTP
@@ -199,7 +199,7 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 
 	// Buat response
 	response := &types.RegisterResponse{
-		Success:   "OTP resent to your email",
+		Success:   utils.T("auth.otp_resent"),
 		ExpiredAt: expirationTime,
 	}
 
@@ -214,7 +214,7 @@ func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.Reg
 	}
 
 	if withinCooldown {
-		return nil, errors.New("please wait 5 minutes before requesting another password reset")
+		return nil, errors.New(utils.T("auth.cooldown_error"))
 	}
 
 	// Check if member exists
@@ -262,7 +262,7 @@ func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.Reg
 	// Get frontend URL from env
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
-		return nil, errors.New("frontend URL is not configured")
+		return nil, errors.New(utils.T("auth.frontend_url_not_configured"))
 	}
 
 	// Create reset password link
@@ -279,7 +279,7 @@ func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.Reg
 
 	// Create response
 	response := &types.RegisterResponse{
-		Success:   "Reset password link sent to your email",
+		Success:   utils.T("auth.reset_password_sent"),
 		ExpiredAt: expirationTime,
 	}
 
