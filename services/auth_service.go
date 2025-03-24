@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/smtp"
 	"os"
 	"time"
 
@@ -18,11 +17,19 @@ import (
 
 type AuthService struct {
 	authRepo *repository.AuthRepository
+	mailer   *utils.Mailer
 }
 
 func NewAuthService() *AuthService {
+	mailer, err := utils.NewMailer()
+	if err != nil {
+		// Log error but continue (fallback)
+		fmt.Printf("Error initializing mailer: %v\n", err)
+	}
+
 	return &AuthService{
 		authRepo: repository.NewAuthRepository(database.DB),
+		mailer:   mailer,
 	}
 }
 
@@ -74,8 +81,8 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 	// Generate OTP
 	otpCode := s.GenerateOTP()
 
-	// Get expiration time
-	expirationTime := time.Now().Add(15 * time.Minute)
+	// Get expiration time (15 minutes)
+	expirationTime := utils.GetExpirationTime(15)
 
 	// Store OTP in database
 	otp := &models.OTP{
@@ -96,7 +103,7 @@ func (s *AuthService) Register(input types.RegisterInput) (*types.RegisterRespon
 	}
 
 	// Send OTP via email
-	if err := s.SendOTPEmail(input.Email, otpCode); err != nil {
+	if err := s.mailer.SendOTPEmail(input.Email, otpCode, 15); err != nil {
 		// Clean up by deleting both pending member and OTP if email sending fails
 		if deleteErr := s.authRepo.DeleteOTP(input.Email); deleteErr != nil {
 			fmt.Printf("Failed to delete OTP after email sending failure: %v\n", deleteErr)
@@ -151,49 +158,6 @@ func (s *AuthService) GenerateOTP() string {
 	return fmt.Sprintf("%06d", otp)
 }
 
-func (s *AuthService) SendOTPEmail(email string, otp string) error {
-	// Get email configuration from environment variables
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	smtpUsername := os.Getenv("SMTP_USERNAME")
-	smtpPassword := os.Getenv("SMTP_PASSWORD")
-
-	// Validate SMTP configuration
-	if smtpHost == "" || smtpPort == "" || smtpUsername == "" || smtpPassword == "" {
-		return errors.New("SMTP configuration is incomplete")
-	}
-
-	// Set up authentication
-	auth := smtp.PlainAuth("", smtpUsername, smtpPassword, smtpHost)
-
-	// Add debug log
-	fmt.Printf("SMTP Config: Host=%s, Port=%s, Username=%s\n", smtpHost, smtpPort, smtpUsername)
-
-	// Compose the email
-	from := smtpUsername
-	to := []string{email}
-
-	subject := "Your OTP Code"
-	expiresAt := "15 minutes"
-	htmlBody := utils.OTPMail(otp, expiresAt)
-
-	// Format the email with HTML content type
-	message := fmt.Appendf(nil, "To: %s\r\n"+
-		"Subject: %s\r\n"+
-		"MIME-version: 1.0\r\n"+
-		"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
-		"\r\n"+
-		"%s\r\n", email, subject, htmlBody)
-
-	// Send email
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *AuthService) DeletePendingMember(email string) error {
 	return s.authRepo.DeletePendingMember(email)
 }
@@ -209,7 +173,7 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 	otpCode := s.GenerateOTP()
 
 	// Get expiration time
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := utils.GetExpirationTime(15)
 
 	// Store OTP in database
 	otp := &models.OTP{
@@ -225,7 +189,7 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 	}
 
 	// Send OTP via email
-	if err := s.SendOTPEmail(email, otpCode); err != nil {
+	if err := s.mailer.SendOTPEmail(email, otpCode, 15); err != nil {
 		// Clean up by deleting the OTP if email sending fails
 		if deleteErr := s.authRepo.DeleteOTP(email); deleteErr != nil {
 			fmt.Printf("Failed to delete OTP after email sending failure: %v\n", deleteErr)
@@ -243,6 +207,20 @@ func (s *AuthService) ResendOTP(email string) (*types.RegisterResponse, error) {
 }
 
 func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.RegisterResponse, error) {
+	// Check if there's a token within the cooldown period (5 minutes)
+	withinCooldown, remainingTime, err := s.authRepo.IsWithinCooldownPeriod(input.Email, 5)
+	if err != nil {
+		return nil, err
+	}
+
+	if withinCooldown {
+		// Calculate minutes and seconds for the error message
+		minutes := int(remainingTime.Minutes())
+		seconds := int(remainingTime.Seconds()) % 60
+
+		return nil, fmt.Errorf("please wait %d minutes and %d seconds before requesting another password reset", minutes, seconds)
+	}
+
 	// Check if member exists
 	member, err := s.authRepo.GetMemberByUserOrMail(input.Email)
 	if err != nil {
@@ -250,7 +228,7 @@ func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.Reg
 	}
 
 	// Get expiration time
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := utils.GetExpirationTime(15)
 
 	// Prepare data for token generation and database storage
 	tokenData := struct {
@@ -295,7 +273,7 @@ func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.Reg
 	resetLink := fmt.Sprintf("%s/auth/reset-password?email=%s&token=%s", frontendURL, input.Email, tokenString)
 
 	// Send reset password email
-	if err := s.SendResetPasswordEmail(member.Email, resetLink); err != nil {
+	if err := s.mailer.SendResetPasswordEmail(member.Email, resetLink, 15); err != nil {
 		// Clean up by deleting the token if email sending fails
 		if deleteErr := s.authRepo.DeleteResetPasswordToken(member.Email); deleteErr != nil {
 			fmt.Printf("Failed to delete reset token after email sending failure: %v\n", deleteErr)
@@ -310,46 +288,6 @@ func (s *AuthService) ResetPassword(input types.ForgotPasswordInput) (*types.Reg
 	}
 
 	return response, nil
-}
-
-func (s *AuthService) SendResetPasswordEmail(email string, resetLink string) error {
-	// Get email configuration from environment variables
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	smtpUsername := os.Getenv("SMTP_USERNAME")
-	smtpPassword := os.Getenv("SMTP_PASSWORD")
-
-	// Validate SMTP configuration
-	if smtpHost == "" || smtpPort == "" || smtpUsername == "" || smtpPassword == "" {
-		return errors.New("SMTP configuration is incomplete")
-	}
-
-	// Set up authentication
-	auth := smtp.PlainAuth("", smtpUsername, smtpPassword, smtpHost)
-
-	// Compose the email
-	from := smtpUsername
-	to := []string{email}
-
-	subject := "Reset Your Password"
-	expiresAt := "15 minutes"
-	htmlBody := utils.ResetPasswordMail(resetLink, expiresAt)
-
-	// Format the email with HTML content type
-	message := fmt.Appendf(nil, "To: %s\r\n"+
-		"Subject: %s\r\n"+
-		"MIME-version: 1.0\r\n"+
-		"Content-Type: text/html; charset=\"UTF-8\"\r\n"+
-		"\r\n"+
-		"%s\r\n", email, subject, htmlBody)
-
-	// Send email
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *AuthService) ChangePassword(resetPasswordData types.ResetPasswordData, newPassword string) error {

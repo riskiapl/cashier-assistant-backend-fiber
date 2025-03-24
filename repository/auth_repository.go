@@ -313,3 +313,27 @@ func (r *AuthRepository) DeleteExpiredResetPasswordTokens(expirationDuration tim
 	result := r.DB.Where("created_at < ?", cutoffTime).Delete(&models.ResetPasswordToken{})
 	return result.RowsAffected, result.Error
 }
+
+// Add a method to check if a reset request is within the cooldown period
+func (r *AuthRepository) IsWithinCooldownPeriod(email string, cooldownMinutes int) (bool, time.Duration, error) {
+	var resetPasswordToken models.ResetPasswordToken
+
+	// Calculate the cooldown cutoff time
+	cooldownPeriod := time.Duration(cooldownMinutes) * time.Minute
+	cutoffTime := time.Now().Add(-cooldownPeriod)
+
+	// Check if there's a token created after the cutoff time
+	result := r.DB.Where("email = ? AND created_at > ?", email, cutoffTime).First(&resetPasswordToken)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// No token found within cooldown period
+			return false, 0, nil
+		}
+		return false, 0, result.Error
+	}
+
+	// Calculate remaining wait time
+	remainingTime := time.Until(resetPasswordToken.CreatedAt.Add(cooldownPeriod))
+	return true, remainingTime, nil
+}
