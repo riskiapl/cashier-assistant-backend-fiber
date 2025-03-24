@@ -11,6 +11,11 @@ func I18nMiddleware() fiber.Handler {
 		// Get the Accept-Language header
 		lang := c.Get("Accept-Language")
 
+		// If language is empty, set default to 'en'
+		if lang == "" {
+			lang = "en"
+		}
+
 		// Set the language for the current request
 		if utils.GlobalI18n != nil {
 			utils.GlobalI18n.SetLanguage(lang)
