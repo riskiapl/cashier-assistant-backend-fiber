@@ -10,11 +10,11 @@ import (
 )
 
 type MemberController struct {
-	service *services.MemberService
+	memberService *services.MemberService
 }
 
-func NewMemberController(service *services.MemberService) *MemberController {
-	return &MemberController{service: service}
+func NewMemberController() *MemberController {
+	return &MemberController{memberService: services.NewMemberService()}
 }
 
 func (c *MemberController) GetMembers(ctx *fiber.Ctx) error {
@@ -28,7 +28,7 @@ func (c *MemberController) GetMembers(ctx *fiber.Ctx) error {
 		offset = 0
 	}
 
-	members, err := c.service.GetMembers(limit, offset)
+	members, err := c.memberService.GetMembers(limit, offset)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to get members",
@@ -51,7 +51,7 @@ func (c *MemberController) GetMember(ctx *fiber.Ctx) error {
 		})
 	}
 
-	member, err := c.service.GetMember(uint(id))
+	member, err := c.memberService.GetMember(uint(id))
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": "Member not found",
@@ -82,7 +82,7 @@ func (c *MemberController) UpdateMember(ctx *fiber.Ctx) error {
 		})
 	}
 
-	updatedMember, err := c.service.UpdateMember(uint(id), &req)
+	updatedMember, err := c.memberService.UpdateMember(uint(id), &req)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to update member",
@@ -105,7 +105,7 @@ func (c *MemberController) DeleteMember(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if err := c.service.DeleteMember(uint(id)); err != nil {
+	if err := c.memberService.DeleteMember(uint(id)); err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to delete member",
 			"error":   err.Error(),

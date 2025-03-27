@@ -3,6 +3,7 @@ package services
 import (
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/riskiapl/fiber-app/database"
 	"github.com/riskiapl/fiber-app/repository"
 	"github.com/riskiapl/fiber-app/types"
 )
@@ -11,8 +12,10 @@ type MemberService struct {
 	repo *repository.MemberRepository
 }
 
-func NewMemberService(repo *repository.MemberRepository) *MemberService {
-	return &MemberService{repo: repo}
+func NewMemberService() *MemberService {
+	return &MemberService{
+		repo: repository.NewMemberRepository(database.DB),
+	}
 }
 
 func (s *MemberService) GetMembers(limit, offset int) (*types.MembersResponse, error) {
@@ -83,6 +86,17 @@ func (s *MemberService) UpdateMember(id uint, req *types.UpdateMemberRequest) (*
 	if req.Avatar != "" {
 		member.Avatar = req.Avatar
 	}
+	// Add handling for Name, PhoneNumber and Address fields
+	if req.Name != nil {
+		member.Name = req.Name
+	}
+	if req.PhoneNumber != nil {
+		member.PhoneNumber = req.PhoneNumber
+	}
+	if req.Address != nil {
+		member.Address = req.Address
+	}
+
 	member.ActionType = "updated"
 
 	if err := s.repo.UpdateMember(member); err != nil {
@@ -90,13 +104,16 @@ func (s *MemberService) UpdateMember(id uint, req *types.UpdateMemberRequest) (*
 	}
 
 	return &types.MemberResponse{
-		ID:        member.ID,
-		Username:  member.Username,
-		Email:     member.Email,
-		Status:    member.Status,
-		Avatar:    member.Avatar,
-		CreatedAt: member.CreatedAt,
-		UpdatedAt: member.UpdatedAt,
+		ID:          member.ID,
+		Username:    member.Username,
+		Email:       member.Email,
+		Status:      member.Status,
+		Avatar:      member.Avatar,
+		CreatedAt:   member.CreatedAt,
+		UpdatedAt:   member.UpdatedAt,
+		Name:        member.Name,
+		PhoneNumber: member.PhoneNumber,
+		Address:     member.Address,
 	}, nil
 }
 

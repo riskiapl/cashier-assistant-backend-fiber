@@ -60,6 +60,7 @@ func main() {
 
 	// Setup routes
 	routes.AuthRoutes(app)
+	routes.MemberRoutes(app)
 
 	log.Fatal(app.Listen(":8000"))
 }
