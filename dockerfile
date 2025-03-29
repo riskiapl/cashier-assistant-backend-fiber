@@ -27,6 +27,8 @@ WORKDIR /app
 COPY --from=builder /app/main .
 # Copy production environment file and rename it to .env
 COPY .env.production .env
+# Copy locales folder
+COPY --from=builder /app/locales ./locales
 
 # Add CA certificates
 RUN apk add --no-cache ca-certificates
